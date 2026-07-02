@@ -5,6 +5,6 @@ WORKDIR /app
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} app.jar
 
-EXPOSE 3100
+EXPOSE 3300
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -1,221 +1,196 @@
-# Team 3
-- **Edgaras Daugevičius**
-- **Karyna Yatsenko**
-- **Matthew Harris**
-- **Raivis Priede**
-- 
-# ACN Bootcamp - Spring Boot + Thymeleaf Hello World
+# Demo Banking Application — Team 3
 
-A simple Spring Boot application with Thymeleaf templating engine, deployable via GitHub Actions to a self-hosted runner.
+A Spring Boot REST API for a simple demo bank: create accounts, look them up, list their transactions, and transfer money between them. Responses are **JSON only** (no UI), and data is held in **in-memory storage** (no database).
 
-## Features
+**Team 3**
+- Edgaras Daugevičius
+- Karyna Yatsenko
+- Matthew Harris
+- Raivis Priede
 
-✅ Spring Boot 3.2.3 with Thymeleaf  
-✅ Configurable port via environment variables (default: 3100)  
-✅ Deployment information displayed in footer (branch, commit, timestamp)  
-✅ GitHub Actions workflow for automated deployment  
-✅ Self-hosted runner support  
-✅ Modern responsive UI  
+---
+
+## Project status
+
+| Area | Status |
+|------|--------|
+| Project setup (Spring Web, Validation, Lombok) | ✅ Done |
+| Domain model (`User`, `Account`, `Transaction`, enums) | ✅ Done |
+| DTOs + input validation | 🚧 In progress |
+| Service layer (`AccountService`, `TransferService`) | 🚧 In progress |
+| REST controllers / endpoints | 🚧 In progress |
+| CI/CD deploy (GitHub Actions + Docker) | ✅ Working |
+
+The API described below is the **target design** from the assignment; some endpoints are still being implemented.
+
+---
+
+## Tech stack
+
+- **Java 17**
+- **Spring Boot 3.2.3** — `spring-boot-starter-web`
+- **Bean Validation** — `spring-boot-starter-validation` (Hibernate Validator)
+- **Lombok** — boilerplate (getters/setters/builders)
+- **Spring Boot DevTools** — hot reload during development
+- **Maven** — build tool (wrapper included)
+
+> Note: `spring-boot-starter-thymeleaf` is still listed in `pom.xml` but is **no longer used** (the demo UI was removed). It can be deleted.
+
+---
 
 ## Prerequisites
 
-- **Java 17+** installed
-- **Maven 3.8+** installed
-- **Git** installed
+- **Java 17+** — check with `java -version`
+- **Git**
+- **Maven** is optional — the repo ships a Maven wrapper (`./mvnw`) that downloads its own Maven. A system Maven 3.8+ also works.
 
-### For GitHub Actions Deployment
+---
 
-- Self-hosted GitHub runner configured
-- Runner must have Java 17+ and Maven 3.8+ installed
+## Running the application
 
-## Local Development
+### Option A — Maven wrapper (no local Maven needed)
 
-### Build the application
+The wrapper downloads a pinned Maven (3.9.6) into `.maven/` on first run, then builds/runs the app.
+
+**macOS / Linux:**
+```bash
+# If you get "permission denied", make it executable once:
+chmod +x mvnw
+
+./mvnw clean package                 # build the jar
+./mvnw spring-boot:run               # run directly (hot reload)
+```
+
+**Windows:**
+```bat
+mvnw.cmd clean package
+mvnw.cmd spring-boot:run
+```
+
+> The wrapper prefers `curl` and falls back to `wget` (macOS/Linux) or PowerShell (Windows), so it works out of the box on a stock machine. It needs internet access on first run to fetch Maven.
+
+### Option B — System Maven
 
 ```bash
 mvn clean package
-```
-
-### Run the application
-
-```bash
-java -jar target/acn-bootcamp-app-1.0.0.jar
-```
-
-The application will start on port 3100 by default.
-
-### Custom Port
-
-```bash
-java -jar target/acn-bootcamp-app-1.0.0.jar --server.port=8080
-```
-
-Or via environment variable:
-
-```bash
-export SERVER_PORT=8080
-java -jar target/acn-bootcamp-app-1.0.0.jar
-```
-
-### Development with hot reload
-
-```bash
 mvn spring-boot:run
 ```
 
-## Environment Variables
+### Option C — Run the built jar
 
-The application supports the following environment variables:
+```bash
+java -jar target/acn-bootcamp-app-1.0.0.jar
+```
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SERVER_PORT` | Port the application listens on | `3100` |
-| `DEPLOYMENT_BRANCH` | Git branch for deployment info | `unknown` |
-| `DEPLOYMENT_COMMIT` | Git commit hash for deployment info | `unknown` |
-| `DEPLOYMENT_TIMESTAMP` | Deployment timestamp for deployment info | `unknown` |
+The app starts on **port 3300** by default.
+
+### Changing the port
+
+```bash
+# Via flag
+java -jar target/acn-bootcamp-app-1.0.0.jar --server.port=8080
+
+# Via environment variable
+SERVER_PORT=8080 java -jar target/acn-bootcamp-app-1.0.0.jar
+```
+
+---
+
+## Domain model
+
+| Entity | Fields |
+|--------|--------|
+| `User` | `userId` (UUID), `username`, `passwordHash`, `role` |
+| `Account` | `accountId` (UUID), `iban`, `ownerName`, `balance` (`BigDecimal`) |
+| `Transaction` | `transactionId` (UUID), `account`, `type`, `amount` (`BigDecimal`), `createdAt` (`Instant`), `note` |
+
+Enums: `Role { USER, ADMIN }`, `TransactionType { DEPOSIT, WITHDRAWAL, TRANSFER }`.
+
+---
+
+## Project structure
+
+```
+src/main/java/com/example/acnbootcamp/
+├── Application.java          # Spring Boot entry point (keep this class name — see Deployment)
+├── domain/                   # Entities: User, Account, Transaction, Role, TransactionType
+├── dto/
+│   ├── request/              # Incoming payloads (+ validation annotations)
+│   └── response/             # Outgoing JSON views
+├── mapper/                   # domain <-> dto conversion
+├── repository/               # In-memory storage (Map/List)
+├── service/                  # Business logic: AccountService, TransferService
+├── controller/               # REST endpoints (@RestController)
+└── exception/                # Custom exceptions + @RestControllerAdvice (JSON errors)
+
+src/main/resources/
+└── application.properties    # Config (server.port, app name)
+```
+
+---
 
 ## Deployment
 
-### GitHub Actions Workflow
+Deployment is automated via GitHub Actions (`.github/workflows/deploy.yml`) to a **self-hosted runner**:
 
-The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that:
+1. Triggers on push to `main` or `develop` (or manually via *workflow_dispatch*).
+2. Builds the jar with Maven (`mvn clean package -DskipTests`).
+3. Builds a Docker image (`Dockerfile`) and runs it, publishing `SERVER_PORT` (default **3300**).
+4. **Health check**: waits until the container log prints `Started Application in …`, then reports success.
 
-1. Triggers on pushes to `main` or `develop` branches
-2. Builds the application with Maven
-3. Extracts deployment information (branch, commit, timestamp)
-4. Deploys to a self-hosted runner
-5. Starts the application with deployment info injected
+See [`docs/RUNNER_SETUP.md`](docs/RUNNER_SETUP.md) for runner configuration and [`docs/QUICK_START.md`](docs/QUICK_START.md) for a quick start.
 
-### Setting up a Self-Hosted Runner
+> ⚠️ The deploy health check greps the startup log for `"Started Application in"`, which contains the **main class name**. Do **not** rename `Application` (e.g. to `BankingApplication`) without also updating the check in `deploy.yml`.
 
-1. Go to your GitHub repository → Settings → Actions → Runners
-2. Click "New self-hosted runner"
-3. Follow the instructions to configure the runner on your machine
-4. Ensure the runner has Java 17+ and Maven 3.8+ installed
-5. Push to `main` or `develop` branch to trigger deployment
+---
 
-### Manual Deployment
+## Troubleshooting — app won't start
 
-To manually deploy on your self-hosted runner machine:
-
+**Port already in use** (`Web server failed to start. Port 3300 was already in use.`)
 ```bash
-# Clone/pull the repository
-git clone <repo-url>
-cd acn-bootcamp-example-project
-
-# Get deployment info
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-COMMIT=$(git rev-parse --short HEAD)
-TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
-
-# Build
-mvn clean package
-
-# Stop existing app (if running)
-kill $(lsof -ti:3100) || true
-
-# Start with environment variables
-DEPLOYMENT_BRANCH=$BRANCH \
-DEPLOYMENT_COMMIT=$COMMIT \
-DEPLOYMENT_TIMESTAMP=$TIMESTAMP \
-java -jar target/acn-bootcamp-app-1.0.0.jar
+lsof -i :3300            # find what's using it (macOS/Linux)
+kill $(lsof -ti:3300)    # free it
+# or just run on another port:
+SERVER_PORT=8080 java -jar target/acn-bootcamp-app-1.0.0.jar
 ```
 
-## Project Structure
-
-```
-acn-bootcamp-example-project/
-├── src/
-│   └── main/
-│       ├── java/com/example/acnbootcamp/
-│       │   ├── Application.java              # Main Spring Boot application
-│       │   ├── controller/
-│       │   │   └── HelloController.java      # Request handler
-│       │   └── model/
-│       │       └── DeploymentInfo.java       # Deployment info model
-│       └── resources/
-│           ├── application.properties        # Application configuration
-│           ├── templates/
-│           │   └── index.html               # Thymeleaf template
-│           └── static/css/
-│               └── style.css                # Stylesheet
-├── .github/workflows/
-│   └── deploy.yml                           # GitHub Actions workflow
-├── pom.xml                                  # Maven configuration
-└── README.md                                # This file
-```
-
-## Accessing the Application
-
-Once deployed, access the application at:
-
-```
-http://localhost:3100
-```
-
-The footer displays:
-- **Branch**: The Git branch from which the deployment occurred
-- **Commit**: The short commit hash
-- **Timestamp**: The deployment timestamp in UTC
-
-## Architecture
-
-### Components
-
-1. **Application.java**: Spring Boot entry point
-2. **HelloController.java**: Handles HTTP requests and injects deployment info
-3. **DeploymentInfo.java**: Model for deployment metadata
-4. **index.html**: Thymeleaf template rendering the UI with footer
-5. **style.css**: Responsive styling with gradient background
-
-### Data Flow
-
-```
-Request → HelloController → DeploymentInfo Model → Thymeleaf Template → HTML Response
-```
-
-The deployment info is injected from environment variables at runtime:
-- `DEPLOYMENT_BRANCH` → application.properties → Controller → Template
-- `DEPLOYMENT_COMMIT` → application.properties → Controller → Template  
-- `DEPLOYMENT_TIMESTAMP` → application.properties → Controller → Template
-
-## Building from Scratch
-
-The application uses Maven for dependency management:
-
-- **spring-boot-starter-web**: Web framework
-- **spring-boot-starter-thymeleaf**: Template engine
-- **spring-boot-devtools**: Development tools
-- **spring-boot-starter-test**: Testing framework
-
-All dependencies are automatically downloaded during the first build.
-
-## Troubleshooting
-
-### Application won't start
-
-1. Check if port 3100 is already in use: `lsof -i :3100`
-2. Use a different port: `SERVER_PORT=8080 java -jar target/acn-bootcamp-app-1.0.0.jar`
-3. Check logs for errors
-
-### GitHub Actions deployment fails
-
-1. Verify self-hosted runner is online and connected
-2. Check runner logs: `tail ~/.actions-runner/_diag/Runner_*.log`
-3. Ensure Java 17+ is installed on runner: `java -version`
-4. Ensure Maven 3.8+ is installed on runner: `mvn -version`
-
-### Deployment info shows "unknown"
-
-Ensure environment variables are set when starting the application:
-
+**Wrong Java version** (`UnsupportedClassVersionError`, or build fails)
 ```bash
-DEPLOYMENT_BRANCH=main \
-DEPLOYMENT_COMMIT=abc1234 \
-DEPLOYMENT_TIMESTAMP="2026-04-16 12:00:00 UTC" \
-java -jar target/acn-bootcamp-app-1.0.0.jar
+java -version            # must be 17+
+echo $JAVA_HOME          # point this at a JDK 17+ if needed
 ```
 
-## License
+**`./mvnw: permission denied`**
+```bash
+chmod +x mvnw
+```
 
-MIT License
+**`wget: command not found` / wrapper can't download Maven**
+- Make sure you're on the latest code (the wrapper now falls back to `curl`).
+- No internet / behind a proxy? Skip the wrapper and use a system Maven: `mvn clean package`.
+
+**Lombok errors in the IDE** (`cannot find symbol: method getBalance()`)
+- Enable **annotation processing** in your IDE and install the **Lombok plugin** (IntelliJ IDEA / Eclipse). Command-line builds work without any plugin.
+
+**Stale build / weird compile errors**
+```bash
+./mvnw clean package     # wipe target/ and rebuild
+```
+
+**Validation not triggering / no 400 on bad input**
+- Ensure the controller parameter is annotated `@Valid`, and `spring-boot-starter-validation` is on the classpath (it is, in `pom.xml`).
+
+## Troubleshooting — deployment
+
+**Container starts then the workflow fails at "Verify deployment"**
+- The health check looks for `Started Application in` in the logs. Check the real cause:
+  ```bash
+  docker logs acn-bootcamp-app
+  ```
+- If you renamed the main class, update the grep string in `deploy.yml`.
+
+**GitHub Actions job never picks up**
+- Verify the self-hosted runner is online: repo → Settings → Actions → Runners.
+- Ensure the runner has Java 17+ and Docker available (`java -version`, `docker version`).
+
+---
