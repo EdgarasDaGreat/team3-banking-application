@@ -29,7 +29,14 @@ if [ ! -f "$MAVEN_BIN" ]; then
     echo "Downloading Maven..."
     mkdir -p "$MAVEN_HOME"
     cd "$MAVEN_HOME"
-    wget -q "$MAVEN_URL" -O maven.tar.gz
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$MAVEN_URL" -o maven.tar.gz
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q "$MAVEN_URL" -O maven.tar.gz
+    else
+        echo "Error: neither curl nor wget is installed; cannot download Maven." >&2
+        exit 1
+    fi
     tar xzf maven.tar.gz --strip-components 1
     rm maven.tar.gz
     cd -

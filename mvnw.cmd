@@ -27,10 +27,25 @@ if not exist "%MAVEN_BIN%" (
     if not exist "%MAVEN_HOME%" mkdir "%MAVEN_HOME%"
     
     cd /d "%MAVEN_HOME%"
-    powershell -Command "(New-Object Net.WebClient).DownloadFile('%MAVEN_URL%', 'maven.zip')"
-    powershell -Command "Expand-Archive 'maven.zip' -DestinationPath . -Force"
-    powershell -Command "Move-Item -Path 'apache-maven-3.9.6\*' -Destination . -Force"
-    powershell -Command "Remove-Item 'apache-maven-3.9.6' -Force"
+
+    REM Prefer curl.exe (bundled with Windows 10 1803+ / Windows 11); fall back to PowerShell for older Windows.
+    where curl >nul 2>&1
+    if !errorlevel! == 0 (
+        curl -fsSL -o maven.zip "%MAVEN_URL%"
+    ) else (
+        powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('%MAVEN_URL%', 'maven.zip')"
+    )
+
+    REM Prefer tar (bundled with Windows 10 1803+); fall back to PowerShell Expand-Archive.
+    where tar >nul 2>&1
+    if !errorlevel! == 0 (
+        tar -xf maven.zip --strip-components 1
+    ) else (
+        powershell -Command "Expand-Archive 'maven.zip' -DestinationPath . -Force"
+        powershell -Command "Move-Item -Path 'apache-maven-3.9.6\*' -Destination . -Force"
+        powershell -Command "Remove-Item 'apache-maven-3.9.6' -Force"
+    )
+
     del /f /q maven.zip
     cd /d "%~dp0"
 )
