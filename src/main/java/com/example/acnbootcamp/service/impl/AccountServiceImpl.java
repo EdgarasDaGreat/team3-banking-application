@@ -2,6 +2,7 @@ package com.example.acnbootcamp.service.impl;
 
 import com.example.acnbootcamp.domain.Account;
 import com.example.acnbootcamp.dto.request.CreateAccountRequestDto;
+import com.example.acnbootcamp.exception.AccountNotFoundException;
 import com.example.acnbootcamp.mapper.AccountMapper;
 import com.example.acnbootcamp.repository.AccountRepository;
 import com.example.acnbootcamp.service.AccountService;
@@ -33,7 +34,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public Account getAccountById(UUID accountId) {
         return accountRepository.findById(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("Account with ID " + accountId + " not found!"));
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
 
     private String generateIban() {

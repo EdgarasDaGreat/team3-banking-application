@@ -5,6 +5,7 @@ import com.example.acnbootcamp.domain.Transaction;
 import com.example.acnbootcamp.domain.TransactionType;
 import com.example.acnbootcamp.dto.request.DepositRequestDto;
 import com.example.acnbootcamp.dto.request.WithdrawalRequestDto;
+import com.example.acnbootcamp.exception.InsufficientFundsException;
 import com.example.acnbootcamp.mapper.TransactionMapper;
 import com.example.acnbootcamp.repository.AccountRepository;
 import com.example.acnbootcamp.repository.TransactionRepository;
@@ -47,7 +48,7 @@ public class TransactionServiceImpl implements TransactionService {
         BigDecimal amount = request.amount();
 
         if (account.getBalance().compareTo(amount) < 0) {
-            throw new IllegalStateException("Insufficient funds for account ID: " + accountId);
+            throw new InsufficientFundsException("Insufficient funds for account ID: " + accountId);
         }
 
         account.setBalance(account.getBalance().subtract(amount));

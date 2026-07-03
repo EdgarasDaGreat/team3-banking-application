@@ -4,6 +4,8 @@ import com.example.acnbootcamp.domain.Account;
 import com.example.acnbootcamp.domain.Transaction;
 import com.example.acnbootcamp.domain.TransactionType;
 import com.example.acnbootcamp.dto.request.TransferRequestDto;
+import com.example.acnbootcamp.exception.InsufficientFundsException;
+import com.example.acnbootcamp.exception.InvalidTransferException;
 import com.example.acnbootcamp.mapper.TransactionMapper;
 import com.example.acnbootcamp.repository.AccountRepository;
 import com.example.acnbootcamp.repository.TransactionRepository;
@@ -33,11 +35,11 @@ public class TransferServiceImpl implements TransferService {
         BigDecimal amount = request.amount();
 
         if (sourceAccount.getAccountId().equals(targetAccount.getAccountId())) {
-            throw new IllegalArgumentException("Cannot transfer money to the same account!");
+            throw new InvalidTransferException("Cannot transfer money to the same account!");
         }
         synchronized (this) {
             if (sourceAccount.getBalance().compareTo(amount) < 0) {
-                throw new IllegalStateException("Insufficient funds for account ID: " + sourceAccount.getAccountId());
+                throw new InsufficientFundsException("Insufficient funds for account ID: " + sourceAccount.getAccountId());
             }
             sourceAccount.setBalance(sourceAccount.getBalance().subtract(amount));
             targetAccount.setBalance(targetAccount.getBalance().add(amount));
