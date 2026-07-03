@@ -11,14 +11,14 @@ import java.util.UUID;
 @Component
 public class AccountMapper {
 
-    public Account toEntity(CreateAccountRequest request) {
+    public Account toEntity(UUID accountId, String iban, CreateAccountRequest request) {
         BigDecimal balance = request.getInitialBalance() != null
                 ? request.getInitialBalance()
                 : BigDecimal.ZERO;
 
         return Account.builder()
-                .accountId(UUID.randomUUID())
-                .iban(generateIban())
+                .accountId(accountId)
+                .iban(iban)
                 .ownerName(request.getOwnerName())
                 .balance(balance)
                 .build();
@@ -31,13 +31,5 @@ public class AccountMapper {
                 .ownerName(account.getOwnerName())
                 .balance(account.getBalance())
                 .build();
-    }
-
-    private String generateIban() {
-        String digits = UUID.randomUUID().toString().replaceAll("[^0-9]", "");
-        while (digits.length() < 16) {
-            digits += UUID.randomUUID().toString().replaceAll("[^0-9]", "");
-        }
-        return "LT" + digits.substring(0, 18);
     }
 }

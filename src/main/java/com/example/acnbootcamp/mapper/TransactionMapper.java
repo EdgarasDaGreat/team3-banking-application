@@ -3,11 +3,11 @@ package com.example.acnbootcamp.mapper;
 import com.example.acnbootcamp.domain.Account;
 import com.example.acnbootcamp.domain.Transaction;
 import com.example.acnbootcamp.domain.TransactionType;
-import com.example.acnbootcamp.dto.request.TransferRequest;
 import com.example.acnbootcamp.dto.response.TransactionResponse;
 import com.example.acnbootcamp.dto.response.TransferResponse;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -33,37 +33,26 @@ public class TransactionMapper {
                 .collect(Collectors.toList());
     }
 
-    public Transaction toDebitTransaction(TransferRequest request, Account fromAccount) {
+    public Transaction toEntity(UUID id, Account account, TransactionType type,
+                                BigDecimal amount, Instant createdAt, String note) {
         return Transaction.builder()
-                .transactionId(UUID.randomUUID())
-                .account(fromAccount)
-                .type(TransactionType.TRANSFER)
-                .amount(request.getAmount().negate())
-                .createdAt(Instant.now())
-                .note(request.getNote())
+                .transactionId(id)
+                .account(account)
+                .type(type)
+                .amount(amount)
+                .createdAt(createdAt)
+                .note(note)
                 .build();
     }
 
-    public Transaction toCreditTransaction(TransferRequest request, Account toAccount) {
-        return Transaction.builder()
-                .transactionId(UUID.randomUUID())
-                .account(toAccount)
-                .type(TransactionType.TRANSFER)
-                .amount(request.getAmount())
-                .createdAt(Instant.now())
-                .note(request.getNote())
-                .build();
-    }
-
-    public TransferResponse toTransferResponse(TransferRequest request, Transaction debit, Transaction credit) {
+    public TransferResponse toTransferResponse(UUID fromAccountId, UUID toAccountId,
+                                               BigDecimal amount, String note, Instant createdAt) {
         return TransferResponse.builder()
-                .fromAccountId(request.getFromAccountId())
-                .toAccountId(request.getToAccountId())
-                .amount(request.getAmount())
-                .createdAt(credit.getCreatedAt())
-                .note(request.getNote())
-                .debitTransaction(toResponse(debit))
-                .creditTransaction(toResponse(credit))
+                .fromAccountId(fromAccountId)
+                .toAccountId(toAccountId)
+                .amount(amount)
+                .note(note)
+                .createdAt(createdAt)
                 .build();
     }
 }
