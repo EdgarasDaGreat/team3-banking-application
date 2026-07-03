@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
-
 @RestController
 @RequestMapping("/transfer")
 @RequiredArgsConstructor
@@ -23,11 +21,7 @@ public class TransferController {
 
     @PostMapping
     public ResponseEntity<TransferResponseDto> transfer(@Valid @RequestBody TransferRequestDto request) {
-        transferService.executeTransfer(request);
-
-        TransferResponseDto response = new TransferResponseDto(
-                request.fromAccountId(), request.toAccountId(), request.amount(), request.note(), Instant.now());
-
+        TransferResponseDto response = transferService.executeTransfer(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

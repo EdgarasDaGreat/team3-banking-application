@@ -4,6 +4,7 @@ import com.example.acnbootcamp.domain.Account;
 import com.example.acnbootcamp.domain.Transaction;
 import com.example.acnbootcamp.domain.TransactionType;
 import com.example.acnbootcamp.dto.request.TransferRequestDto;
+import com.example.acnbootcamp.dto.response.TransferResponseDto;
 import com.example.acnbootcamp.exception.InsufficientFundsException;
 import com.example.acnbootcamp.exception.InvalidTransferException;
 import com.example.acnbootcamp.mapper.TransactionMapper;
@@ -28,7 +29,7 @@ public class TransferServiceImpl implements TransferService {
     private final TransactionMapper transactionMapper;
 
     @Override
-    public void executeTransfer(TransferRequestDto request) {
+    public TransferResponseDto executeTransfer(TransferRequestDto request) {
         Account sourceAccount = accountService.getAccountById(request.fromAccountId());
         Account targetAccount = accountService.getAccountById(request.toAccountId());
 
@@ -56,6 +57,9 @@ public class TransferServiceImpl implements TransferService {
 
             transactionRepository.save(debitTx);
             transactionRepository.save(creditTx);
+
+            return transactionMapper.toTransferResponse(
+                    sourceAccount.getAccountId(), targetAccount.getAccountId(), amount, request.note(), now);
         }
     }
 }
