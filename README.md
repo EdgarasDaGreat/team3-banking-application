@@ -1,6 +1,6 @@
 # Demo Banking Application — Team 3
 
-A Spring Boot REST API for a simple demo bank: create accounts, look them up, list their transactions, and transfer money between them. Responses are **JSON only** (no UI), and data is held in **in-memory storage** (no database).
+A Spring Boot REST API for a simple demo bank: create accounts, look them up, deposit and withdraw funds, list their transactions, and transfer money between them. Responses are **JSON only** (no UI), and data is held in **in-memory storage** (no database).
 
 **Team 3**
 - Edgaras Daugevičius
@@ -16,8 +16,8 @@ A Spring Boot REST API for a simple demo bank: create accounts, look them up, li
 |------|--------|
 | Project setup (Spring Web, Validation, Lombok) | ✅ Done |
 | Domain model (`User`, `Account`, `Transaction`, enums) | ✅ Done |
-| DTOs + input validation | 🚧 In progress |
-| Service layer (`AccountService`, `TransferService`) | 🚧 In progress |
+| DTOs (records) + input validation | ✅ Done |
+| Service layer (`AccountService`, `TransactionService`, `TransferService`) | ✅ Done (interfaces + impls; not yet exposed via controllers) |
 | REST controllers / endpoints | 🚧 In progress |
 | CI/CD deploy (GitHub Actions + Docker) | ✅ Working |
 
@@ -115,11 +115,12 @@ src/main/java/com/example/acnbootcamp/
 ├── Application.java          # Spring Boot entry point (keep this class name — see Deployment)
 ├── domain/                   # Entities: User, Account, Transaction, Role, TransactionType
 ├── dto/
-│   ├── request/              # Incoming payloads (+ validation annotations)
-│   └── response/             # Outgoing JSON views
+│   ├── request/              # Incoming payloads as records (+ validation annotations)
+│   └── response/             # Outgoing JSON views as records
 ├── mapper/                   # domain <-> dto conversion
 ├── repository/               # In-memory storage (Map/List)
-├── service/                  # Business logic: AccountService, TransferService
+├── service/                  # Business logic interfaces: AccountService, TransactionService, TransferService
+│   └── impl/                 # Service implementations (@Service)
 ├── controller/               # REST endpoints (@RestController)
 └── exception/                # Custom exceptions + @RestControllerAdvice (JSON errors)
 
