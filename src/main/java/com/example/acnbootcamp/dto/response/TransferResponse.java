@@ -13,8 +13,6 @@ public class TransferResponse {
     private UUID fromAccountId;
     private UUID toAccountId;
     private BigDecimal amount;
-    private Instant createdAt;
     private String note;
-    private TransactionResponse debitTransaction;
-    private TransactionResponse creditTransaction;
+    private Instant createdAt;
 }
